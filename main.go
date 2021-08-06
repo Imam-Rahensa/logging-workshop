@@ -51,14 +51,16 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 
 	// parse the product id
 	if len(keys) < 1 {
-		log.StdFatal(ctx, nil, nil, "No product id found")
+		// Dont use fatal, because this filter just want to make sure result is not out of index (IndexError)
+		log.StdError(ctx, nil, nil, "No product id found")
 		fmt.Fprint(w, "No product id supplied")
 		return
 	}
 
 	productID, err = strconv.Atoi(keys[0])
 	if err != nil {
-		log.StdFatalf(ctx, nil, nil, "Product id not valid %s", keys[0])
+		// Use Warn if cannot convert Atoi because wrong input parameter
+		log.StdWarnf(ctx, nil, nil, "Product id not valid %s", keys[0])
 		fmt.Fprint(w, "No product id supplied")
 		return
 	}
@@ -68,15 +70,18 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 
 	product, err := GetProductFromDB(ctx, productID)
 	if err != nil {
+		// Log error trace from GetProductFromDB
+		log.StdError(ctx, nil, err, "Invalid Product Id")
 		fmt.Fprint(w, "Invalid id")
 		return
 	}
 
-	err = CalculateDiscount(ctx, product)
-	if err != nil {
-		fmt.Fprint(w, "Invalid id")
-		return
-	}
+	_ = CalculateDiscount(ctx, product)
+	// No need err because return always nil(?)
+	// if err != nil {
+	// 	fmt.Fprint(w, "Invalid id")
+	// 	return
+	// }
 
 	fmt.Fprintf(w, "%+v", product)
 }
@@ -84,7 +89,8 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 func GetProductFromDB(ctx context.Context, id int) (*external.Product, error) {
 	var result external.Product
 	if id < 1 {
-		return nil, errors.New("Product id Invalid")
+		// errors.New() will return warning if string in capitalized
+		return nil, errors.New("product id invalid")
 	}
 
 	result.Name = "product testing"
@@ -95,7 +101,8 @@ func GetProductFromDB(ctx context.Context, id int) (*external.Product, error) {
 func CalculateDiscount(ctx context.Context, p *external.Product) error {
 	if p.Stock%2 == 0 {
 		p.Discount = 20
-		log.StdError(ctx, p, nil, "User get 20 discount")
+		// No need StdError because want to inform user get 20 discount
+		log.StdInfo(ctx, p, nil, "User get 20 discount")
 	} else {
 		p.Discount = 0
 	}
