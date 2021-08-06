@@ -23,7 +23,7 @@ func main() {
 	})
 
 	if err != nil {
-		log.StdInfo(context.Background(), nil, err, "Failed to start Log")
+		log.StdFatal(context.Background(), nil, err, "Failed to start Log")
 	}
 
 	http.HandleFunc("/", HelloHandler)
@@ -44,22 +44,22 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 
 	keys, ok := r.URL.Query()["product_id"]
 	if !ok {
-		log.StdFatal(ctx, nil, nil, "No product id supplied")
+		log.StdWarn(ctx, nil, nil, "No product id supplied")
 		fmt.Fprint(w, "No product id supplied")
 		return
 	}
 
 	// parse the product id
 	if len(keys) < 1 {
-		log.StdFatal(ctx, nil, nil, "No product id found")
+		log.StdWarn(ctx, nil, nil, "No product id supplied")
 		fmt.Fprint(w, "No product id supplied")
 		return
 	}
 
 	productID, err = strconv.Atoi(keys[0])
 	if err != nil {
-		log.StdFatalf(ctx, nil, nil, "Product id not valid %s", keys[0])
-		fmt.Fprint(w, "No product id supplied")
+		log.StdErrorf(ctx, nil, err, "Product id not valid %s", keys[0])
+		fmt.Fprintf(w, "Product id not valid %s", keys[0])
 		return
 	}
 
@@ -68,12 +68,14 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 
 	product, err := GetProductFromDB(ctx, productID)
 	if err != nil {
+		log.StdErrorf(ctx, nil, err, "[HelloHandler][GetProductFromDB][productID: %s]", keys[0])
 		fmt.Fprint(w, "Invalid id")
 		return
 	}
 
 	err = CalculateDiscount(ctx, product)
 	if err != nil {
+		log.StdErrorf(ctx, product, err, "[HelloHandler][CalculateDiscount][product: %+v]", product)
 		fmt.Fprint(w, "Invalid id")
 		return
 	}
@@ -84,6 +86,7 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 func GetProductFromDB(ctx context.Context, id int) (*external.Product, error) {
 	var result external.Product
 	if id < 1 {
+		log.StdWarnf(ctx, nil, nil, "Product id is invalid %d", id)
 		return nil, errors.New("Product id Invalid")
 	}
 
@@ -95,7 +98,7 @@ func GetProductFromDB(ctx context.Context, id int) (*external.Product, error) {
 func CalculateDiscount(ctx context.Context, p *external.Product) error {
 	if p.Stock%2 == 0 {
 		p.Discount = 20
-		log.StdError(ctx, p, nil, "User get 20 discount")
+		log.StdInfo(ctx, p, nil, "User get 20 discount")
 	} else {
 		p.Discount = 0
 	}
