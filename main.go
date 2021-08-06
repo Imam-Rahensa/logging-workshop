@@ -46,22 +46,22 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 
 	keys, ok := r.URL.Query()["product_id"]
 	if !ok {
-		log.StdError(ctx, nil, nil, "No product id supplied")
-		fmt.Fprint(w, "No product id supplied")
+		log.StdError(ctx, nil, nil, "(HelloHandler): No product id supplied")
+		fmt.Fprint(w, "(HelloHandler): No product id supplied")
 		return
 	}
 
 	// parse the product id
 	if len(keys) < 1 {
-		log.StdError(ctx, nil, nil, "No product is found to be associated with the supplied product ID.")
-		fmt.Fprint(w, "No product is found to be associated with the supplied product ID.")
+		log.StdError(ctx, nil, nil, "(HelloHandler): No product is found to be associated with the supplied product ID.")
+		fmt.Fprint(w, "(HelloHandler): No product is found to be associated with the supplied product ID.")
 		return
 	}
 
 	productID, err = strconv.Atoi(keys[0])
 	if err != nil {
-		log.StdErrorf(ctx, nil, nil, "Failed to parse the product ID, with key: %s", json.Marshal(keys))
-		fmt.Fprintf(w, "Failed to parse the product ID, with key: %s", json.Marshal(keys))
+		log.StdErrorf(ctx, nil, nil, "(HelloHandler): Failed to parse the product ID, with key: %s", json.Marshal(keys))
+		fmt.Fprintf(w, "(HelloHandler): Failed to parse the product ID, with key: %s", json.Marshal(keys))
 		return
 	}
 
@@ -70,15 +70,15 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 
 	product, err := GetProductFromDB(ctx, productID)
 	if err != nil {
-		log.StdErrorf(ctx, nil, err, "Failed to get product from database, with product ID: %s", productID)
-		fmt.Fprintf(w, "Failed to get product from database, with product ID: %s", productID)
+		log.StdErrorf(ctx, nil, err, "(HelloHandler)(GetProductFromDB): Failed to get product from database, with product ID: %s", productID)
+		fmt.Fprintf(w, "(HelloHandler)(GetProductFromDB): Failed to get product from database, with product ID: %s", productID)
 		return
 	}
 
 	err = CalculateDiscount(ctx, product)
 	if err != nil {
-		log.StdErrorf(ctx, nil, nil, "Failed to calculate discount for product: %s", json.Marshal(product))
-		fmt.Fprintf(w, "Failed to calculate discount for product: %s", json.Marshal(product))
+		log.StdErrorf(ctx, nil, nil, "(HelloHandler)(CalculateDiscount): Failed to calculate discount for product: %s", json.Marshal(product))
+		fmt.Fprintf(w, "(HelloHandler)(CalculateDiscount): Failed to calculate discount for product: %s", json.Marshal(product))
 		return
 	}
 
