@@ -25,7 +25,7 @@ func main() {
 	err := log.SetStdLog(logConfig)
 
 	if err != nil {
-		log.StdErrorf(context.Background(), nil, err, "Failed to initialize log configuration, with config: %s.", json.Marshal(logConfig))
+		log.StdFatalf(context.Background(), nil, err, "Failed to initialize log configuration, with config: %s.", json.Marshal(logConfig))
 	}
 
 	http.HandleFunc("/", HelloHandler)
