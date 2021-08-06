@@ -85,7 +85,6 @@ func GetProductFromDB(ctx context.Context, id int) (*external.Product, error) {
 func CalculateDiscount(ctx context.Context, p *external.Product) error {
 	if p.Stock%2 == 0 {
 		p.Discount = 20
-		log.StdError(ctx, p, nil, "User get 20 discount")
 	} else {
 		p.Discount = 0
 	}
