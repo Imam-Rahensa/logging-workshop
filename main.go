@@ -44,21 +44,21 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 
 	keys, ok := r.URL.Query()["product_id"]
 	if !ok {
-		log.StdError(ctx, nil, nil, "No product id supplied")
+		log.StdError(ctx, nil, nil, "[HelloHandler] Param product_id not exist")
 		fmt.Fprint(w, "No product id supplied")
 		return
 	}
 
 	// parse the product id
 	if len(keys) < 1 {
-		log.StdError(ctx, nil, nil, "No product id supplied")
+		log.StdError(ctx, nil, nil, "[HelloHandler] Param product_id is empty")
 		fmt.Fprint(w, "No product id supplied")
 		return
 	}
 
 	productID, err = strconv.Atoi(keys[0])
 	if err != nil {
-		log.StdError(ctx, nil, nil, "User get 20 discount")
+		log.StdError(ctx, nil, nil, "[HelloHandler][strconv.Atoi] error parsing keys[0]")
 		fmt.Fprint(w, "No product id supplied")
 		return
 	}
@@ -68,12 +68,14 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 
 	product, err := GetProductFromDB(ctx, productID)
 	if err != nil {
+		log.StdError(ctx, productID, err, "[HelloHandler][GetProductFromDB]")
 		fmt.Fprint(w, "Invalid id")
 		return
 	}
 
 	err = CalculateDiscount(ctx, product)
 	if err != nil {
+		log.StdError(ctx, productID, err, "[HelloHandler][CalculateDiscount]")
 		fmt.Fprint(w, "Invalid id")
 		return
 	}
@@ -95,7 +97,7 @@ func GetProductFromDB(ctx context.Context, id int) (*external.Product, error) {
 func CalculateDiscount(ctx context.Context, p *external.Product) error {
 	if p.Stock%2 == 0 {
 		p.Discount = 20
-		log.StdInfo(ctx, p, nil, "User get 20 discount")
+		log.StdDebug(ctx, p, nil, "[CalculateDiscount] User get 20 discount")
 	} else {
 		p.Discount = 0
 	}
