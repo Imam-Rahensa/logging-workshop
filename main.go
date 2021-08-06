@@ -23,7 +23,7 @@ func main() {
 	})
 
 	if err != nil {
-		log.StdInfo(context.Background(), nil, err, "Failed to start Log")
+		log.StdFatal(context.Background(), nil, err, "Failed to start Log") // log is critical
 	}
 
 	http.HandleFunc("/", HelloHandler)
@@ -44,21 +44,21 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 
 	keys, ok := r.URL.Query()["product_id"]
 	if !ok {
-		log.StdFatal(ctx, nil, nil, "No product id supplied")
+		log.StdError(ctx, nil, nil, "No product id supplied") // user error is not fatal
 		fmt.Fprint(w, "No product id supplied")
 		return
 	}
 
 	// parse the product id
 	if len(keys) < 1 {
-		log.StdFatal(ctx, nil, nil, "No product id found")
+		log.StdError(ctx, nil, nil, "No product id found") // user error is not fatal
 		fmt.Fprint(w, "No product id supplied")
 		return
 	}
 
 	productID, err = strconv.Atoi(keys[0])
 	if err != nil {
-		log.StdFatalf(ctx, nil, nil, "Product id not valid %s", keys[0])
+		log.StdErrorf(ctx, nil, err, "Product id not valid. {product_id: %s}", keys[0]) // user error is not fatal
 		fmt.Fprint(w, "No product id supplied")
 		return
 	}
@@ -68,15 +68,12 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 
 	product, err := GetProductFromDB(ctx, productID)
 	if err != nil {
-		fmt.Fprint(w, "Invalid id")
+		log.StdFatalf(ctx, nil, err, "Product id not found from DB. {product_id: %s}", productID) // should probably investigate *why* it's not on DB
+		fmt.Fprintf(w, "Product id not found from DB. {product_id: %s}", productID)
 		return
 	}
 
-	err = CalculateDiscount(ctx, product)
-	if err != nil {
-		fmt.Fprint(w, "Invalid id")
-		return
-	}
+	CalculateDiscount(ctx, product) // this function never returns any error
 
 	fmt.Fprintf(w, "%+v", product)
 }
@@ -92,12 +89,11 @@ func GetProductFromDB(ctx context.Context, id int) (*external.Product, error) {
 	return &result, nil
 }
 
-func CalculateDiscount(ctx context.Context, p *external.Product) error {
+func CalculateDiscount(ctx context.Context, p *external.Product) {
 	if p.Stock%2 == 0 {
 		p.Discount = 20
-		log.StdError(ctx, p, nil, "User get 20 discount")
+		log.StdInfof(ctx, p, nil, "User get discount. {stock: %s, discount: %s}", p.Stock, p.Discount) // this is an action that is expected, so this is not an error
 	} else {
 		p.Discount = 0
 	}
-	return nil
 }
