@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -44,22 +43,19 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 
 	keys, ok := r.URL.Query()["product_id"]
 	if !ok {
-		log.StdFatal(ctx, nil, nil, "No product id supplied")
-		fmt.Fprint(w, "No product id supplied")
+		log.StdErrorf(ctx, nil, nil, "No product id supplied")
 		return
 	}
 
 	// parse the product id
 	if len(keys) < 1 {
-		log.StdFatal(ctx, nil, nil, "No product id found")
-		fmt.Fprint(w, "No product id supplied")
+		log.StdErrorf(ctx, nil, nil, "No product id found")
 		return
 	}
 
 	productID, err = strconv.Atoi(keys[0])
 	if err != nil {
-		log.StdFatalf(ctx, nil, nil, "Product id not valid %s", keys[0])
-		fmt.Fprint(w, "No product id supplied")
+		log.StdErrorf(ctx, nil, nil, "Product id not valid")
 		return
 	}
 
@@ -68,24 +64,18 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 
 	product, err := GetProductFromDB(ctx, productID)
 	if err != nil {
+		log.StdErrorf(ctx, nil, nil, "Id not valid")
 		fmt.Fprint(w, "Invalid id")
 		return
 	}
 
-	err = CalculateDiscount(ctx, product)
-	if err != nil {
-		fmt.Fprint(w, "Invalid id")
-		return
-	}
+	CalculateDiscount(ctx, product)
 
 	fmt.Fprintf(w, "%+v", product)
 }
 
 func GetProductFromDB(ctx context.Context, id int) (*external.Product, error) {
 	var result external.Product
-	if id < 1 {
-		return nil, errors.New("Product id Invalid")
-	}
 
 	result.Name = "product testing"
 	result.Stock = rand.Int()
