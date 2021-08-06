@@ -27,7 +27,10 @@ func main() {
 	}
 
 	http.HandleFunc("/", HelloHandler)
-	http.ListenAndServe(":8080", nil)
+	errCheck := http.ListenAndServe(":8080", nil)
+	if errCheck != nil {
+		log.StdInfo(context.Background(), nil, errCheck, "Failed to listen and serve")
+	}
 }
 
 func HelloHandler(w http.ResponseWriter, r *http.Request) {
@@ -44,22 +47,23 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 
 	keys, ok := r.URL.Query()["product_id"]
 	if !ok {
-		log.StdFatal(ctx, nil, nil, "No product id supplied")
 		fmt.Fprint(w, "No product id supplied")
 		return
 	}
 
+	log.StdDebug(ctx, nil, nil, fmt.Sprintf("[INCOMING DEFAULT HANDLER] productID: %+v", keys))
+
 	// parse the product id
 	if len(keys) < 1 {
-		log.StdFatal(ctx, nil, nil, "No product id found")
-		fmt.Fprint(w, "No product id supplied")
+		log.StdError(ctx, nil, nil, "No product id found")
+		fmt.Fprint(w, "No product id found")
 		return
 	}
 
 	productID, err = strconv.Atoi(keys[0])
 	if err != nil {
-		log.StdFatalf(ctx, nil, nil, "Product id not valid %s", keys[0])
-		fmt.Fprint(w, "No product id supplied")
+		log.StdErrorf(ctx, nil, nil, "Failed to convert productID : %s", keys[0])
+		fmt.Fprint(w, "Product id not valid")
 		return
 	}
 
@@ -68,13 +72,15 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 
 	product, err := GetProductFromDB(ctx, productID)
 	if err != nil {
-		fmt.Fprint(w, "Invalid id")
+		log.StdTrace(ctx, product, err, fmt.Sprintf("Failed to get product from DB [productID: %d]", productID))
+		fmt.Fprint(w, "Invalid ProductID")
 		return
 	}
 
 	err = CalculateDiscount(ctx, product)
 	if err != nil {
-		fmt.Fprint(w, "Invalid id")
+		log.StdTrace(ctx, product, err, fmt.Sprintf("Failed to calculate discount [productID: %d]", productID))
+		fmt.Fprint(w, "No discount given")
 		return
 	}
 
@@ -82,9 +88,14 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetProductFromDB(ctx context.Context, id int) (*external.Product, error) {
-	var result external.Product
+	var (
+		result external.Product
+		err    error
+	)
 	if id < 1 {
-		return nil, errors.New("Product id Invalid")
+		err = errors.New("Product id Invalid")
+		log.StdTrace(ctx, id, err, fmt.Sprintf("Invalid productID: %d", id))
+		return nil, err
 	}
 
 	result.Name = "product testing"
@@ -95,7 +106,6 @@ func GetProductFromDB(ctx context.Context, id int) (*external.Product, error) {
 func CalculateDiscount(ctx context.Context, p *external.Product) error {
 	if p.Stock%2 == 0 {
 		p.Discount = 20
-		log.StdError(ctx, p, nil, "User get 20 discount")
 	} else {
 		p.Discount = 0
 	}
