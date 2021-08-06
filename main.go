@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/imam-rahensa/logging-workshop/external"
 	"github.com/tokopedia/tdk/go/log"
@@ -44,22 +45,19 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 
 	keys, ok := r.URL.Query()["product_id"]
 	if !ok {
-		log.StdFatal(ctx, nil, nil, "No product id supplied")
-		fmt.Fprint(w, "No product id supplied")
+		mappingLog(ctx, ErrorAction, nil, err, "No product id supplied")
 		return
 	}
 
 	// parse the product id
 	if len(keys) < 1 {
-		log.StdFatal(ctx, nil, nil, "No product id found")
-		fmt.Fprint(w, "No product id supplied")
+		mappingLog(ctx, WarnAction, nil, nil, "No product id found")
 		return
 	}
 
 	productID, err = strconv.Atoi(keys[0])
 	if err != nil {
-		log.StdFatalf(ctx, nil, nil, "Product id not valid %s", keys[0])
-		fmt.Fprint(w, "No product id supplied")
+		mappingLog(ctx, ErrorAction, nil, err, fmt.Sprintf("Product id not valid %s", keys[0]))
 		return
 	}
 
@@ -68,13 +66,13 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 
 	product, err := GetProductFromDB(ctx, productID)
 	if err != nil {
-		fmt.Fprint(w, "Invalid id")
+		mappingLog(ctx, ErrorAction, nil, err, "Invalid id")
 		return
 	}
 
 	err = CalculateDiscount(ctx, product)
 	if err != nil {
-		fmt.Fprint(w, "Invalid id")
+		mappingLog(ctx, ErrorAction, nil, err, "Invalid id")
 		return
 	}
 
@@ -95,9 +93,37 @@ func GetProductFromDB(ctx context.Context, id int) (*external.Product, error) {
 func CalculateDiscount(ctx context.Context, p *external.Product) error {
 	if p.Stock%2 == 0 {
 		p.Discount = 20
-		log.StdError(ctx, p, nil, "User get 20 discount")
+		mappingLog(ctx, InfoAction, p, nil, "User get 20 discount")
 	} else {
 		p.Discount = 0
 	}
 	return nil
+}
+
+const (
+	DebugAction = 1
+	InfoAction  = 2
+	WarnAction  = 3
+	ErrorAction = 4
+	FatalAction = 5
+)
+
+func mappingLog(ctx context.Context, action int, metadata interface{}, err error, message string) {
+	time := time.Now()
+	m := fmt.Sprintf("%s:%s", time, message)
+
+	switch action {
+	case DebugAction:
+		log.StdDebug(ctx, metadata, err, m)
+	case InfoAction:
+		log.StdInfo(ctx, metadata, err, m)
+	case WarnAction:
+		log.StdWarn(ctx, metadata, err, m)
+	case ErrorAction:
+		log.StdError(ctx, metadata, err, m)
+	case FatalAction:
+		log.StdFatal(ctx, metadata, err, m)
+	}
+
+	return
 }
