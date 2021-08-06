@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -43,7 +44,7 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 
 	keys, ok := r.URL.Query()["product_id"]
 	if !ok {
-		log.StdErrorf(ctx, nil, nil, "No product id supplied")
+		log.StdWarnf(ctx, nil, nil, "No product id supplied")
 		return
 	}
 
@@ -55,7 +56,7 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 
 	productID, err = strconv.Atoi(keys[0])
 	if err != nil {
-		log.StdErrorf(ctx, nil, nil, "Product id not valid")
+		log.StdWarnf(ctx, nil, nil, "Product id not valid")
 		return
 	}
 
@@ -64,8 +65,7 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 
 	product, err := GetProductFromDB(ctx, productID)
 	if err != nil {
-		log.StdErrorf(ctx, nil, nil, "Id not valid")
-		fmt.Fprint(w, "Invalid id")
+		log.StdErrorf(ctx, nil, nil, fmt.Sprintf("Id not valid%s", err))
 		return
 	}
 
@@ -76,17 +76,18 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 
 func GetProductFromDB(ctx context.Context, id int) (*external.Product, error) {
 	var result external.Product
-
+	if id < 1 {
+		return nil, errors.New(": Negative Value")
+	}
 	result.Name = "product testing"
 	result.Stock = rand.Int()
 	return &result, nil
 }
 
-func CalculateDiscount(ctx context.Context, p *external.Product) error {
+func CalculateDiscount(ctx context.Context, p *external.Product) {
 	if p.Stock%2 == 0 {
 		p.Discount = 20
 	} else {
 		p.Discount = 0
 	}
-	return nil
 }
