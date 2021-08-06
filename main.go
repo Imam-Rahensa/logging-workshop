@@ -7,23 +7,25 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
-
 	"github.com/imam-rahensa/logging-workshop/external"
 	"github.com/tokopedia/tdk/go/log"
+	"encoding/json"
 )
 
 func main() {
 
-	// Set Standard Log Config
-	err := log.SetStdLog(&log.Config{
+	logConfig := &log.Config{
 		Level:     "trace",                            // Default will be in info level
 		LogFile:   "./log/logging-workshop.error.log", // If none supplied will goes to os.Stderr, for production you must put log file
 		DebugFile: "./log/logging-workshop.debug.log", // If none supplied will goes to os.Stderr, for production you must put log file
 		AppName:   "logging-workshop",                 //  your app name, the format will be `{service_name}_{function}`
-	})
+	}
+
+	// Set Standard Log Config
+	err := log.SetStdLog(logConfig)
 
 	if err != nil {
-		log.StdInfo(context.Background(), nil, err, "Failed to start Log")
+		log.StdErrorf(context.Background(), nil, err, "Failed to initialize log configuration, with config: %s.", json.Marshal(logConfig))
 	}
 
 	http.HandleFunc("/", HelloHandler)
@@ -44,22 +46,22 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 
 	keys, ok := r.URL.Query()["product_id"]
 	if !ok {
-		log.StdFatal(ctx, nil, nil, "No product id supplied")
+		log.StdError(ctx, nil, nil, "No product id supplied")
 		fmt.Fprint(w, "No product id supplied")
 		return
 	}
 
 	// parse the product id
 	if len(keys) < 1 {
-		log.StdFatal(ctx, nil, nil, "No product id found")
-		fmt.Fprint(w, "No product id supplied")
+		log.StdError(ctx, nil, nil, "No product is found to be associated with the supplied product ID.")
+		fmt.Fprint(w, "No product is found to be associated with the supplied product ID.")
 		return
 	}
 
 	productID, err = strconv.Atoi(keys[0])
 	if err != nil {
-		log.StdFatalf(ctx, nil, nil, "Product id not valid %s", keys[0])
-		fmt.Fprint(w, "No product id supplied")
+		log.StdErrorf(ctx, nil, nil, "Failed to parse the product ID, with key: %s", json.Marshal(keys))
+		fmt.Fprintf(w, "Failed to parse the product ID, with key: %s", json.Marshal(keys))
 		return
 	}
 
@@ -68,13 +70,15 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 
 	product, err := GetProductFromDB(ctx, productID)
 	if err != nil {
-		fmt.Fprint(w, "Invalid id")
+		log.StdErrorf(ctx, nil, err, "Failed to get product from database, with product ID: %s", productID)
+		fmt.Fprintf(w, "Failed to get product from database, with product ID: %s", productID)
 		return
 	}
 
 	err = CalculateDiscount(ctx, product)
 	if err != nil {
-		fmt.Fprint(w, "Invalid id")
+		log.StdErrorf(ctx, nil, nil, "Failed to calculate discount for product: %s", json.Marshal(product))
+		fmt.Fprintf(w, "Failed to calculate discount for product: %s", json.Marshal(product))
 		return
 	}
 
@@ -84,7 +88,7 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 func GetProductFromDB(ctx context.Context, id int) (*external.Product, error) {
 	var result external.Product
 	if id < 1 {
-		return nil, errors.New("Product id Invalid")
+		return nil, errors.New("Product is invalid!")
 	}
 
 	result.Name = "product testing"
@@ -95,7 +99,7 @@ func GetProductFromDB(ctx context.Context, id int) (*external.Product, error) {
 func CalculateDiscount(ctx context.Context, p *external.Product) error {
 	if p.Stock%2 == 0 {
 		p.Discount = 20
-		log.StdError(ctx, p, nil, "User get 20 discount")
+		log.StdInfo(ctx, p, nil, "User gets 20 discount")
 	} else {
 		p.Discount = 0
 	}
