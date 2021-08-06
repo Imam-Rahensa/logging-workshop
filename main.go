@@ -16,14 +16,14 @@ func main() {
 
 	// Set Standard Log Config
 	err := log.SetStdLog(&log.Config{
-		Level:     "trace",                            // Default will be in info level
+		Level:     "fatal",                            // Default will be in info level
 		LogFile:   "./log/logging-workshop.error.log", // If none supplied will goes to os.Stderr, for production you must put log file
 		DebugFile: "./log/logging-workshop.debug.log", // If none supplied will goes to os.Stderr, for production you must put log file
 		AppName:   "logging-workshop",                 //  your app name, the format will be `{service_name}_{function}`
 	})
 
 	if err != nil {
-		log.StdInfo(context.Background(), nil, err, "Failed to start Log")
+		log.StdFatal(context.Background(), nil, err, "Failed to start Log")
 	}
 
 	http.HandleFunc("/", HelloHandler)
@@ -44,21 +44,21 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 
 	keys, ok := r.URL.Query()["product_id"]
 	if !ok {
-		log.StdFatal(ctx, nil, nil, "No product id supplied")
+		log.StdError(ctx, nil, nil, "[HelloHandler] No product id supplied")
 		fmt.Fprint(w, "No product id supplied")
 		return
 	}
 
 	// parse the product id
 	if len(keys) < 1 {
-		log.StdFatal(ctx, nil, nil, "No product id found")
+		log.StdError(ctx, nil, nil, "[HelloHandler] No product id found")
 		fmt.Fprint(w, "No product id supplied")
 		return
 	}
 
 	productID, err = strconv.Atoi(keys[0])
 	if err != nil {
-		log.StdFatalf(ctx, nil, nil, "Product id not valid %s", keys[0])
+		log.StdErrorf(ctx, nil, nil, "[HelloHandler] Product id not valid %s", keys[0])
 		fmt.Fprint(w, "No product id supplied")
 		return
 	}
@@ -84,6 +84,7 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 func GetProductFromDB(ctx context.Context, id int) (*external.Product, error) {
 	var result external.Product
 	if id < 1 {
+		log.StdError(ctx, id, nil, fmt.Sprintf("[GetProductFromDB] Product ID Invalid : %+v", id))
 		return nil, errors.New("Product id Invalid")
 	}
 
@@ -95,7 +96,7 @@ func GetProductFromDB(ctx context.Context, id int) (*external.Product, error) {
 func CalculateDiscount(ctx context.Context, p *external.Product) error {
 	if p.Stock%2 == 0 {
 		p.Discount = 20
-		log.StdError(ctx, p, nil, "User get 20 discount")
+		log.StdTrace(ctx, p, nil, fmt.Sprintf("[CalculateDiscount] User discount : %+v", p))
 	} else {
 		p.Discount = 0
 	}
