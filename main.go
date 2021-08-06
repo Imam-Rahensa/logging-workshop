@@ -23,7 +23,7 @@ func main() {
 	})
 
 	if err != nil {
-		log.StdInfo(context.Background(), nil, err, "Failed to start Log")
+		log.StdFatal(context.Background(), nil, err, "[main] Failed to start Log")
 	}
 
 	http.HandleFunc("/", HelloHandler)
@@ -44,21 +44,21 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 
 	keys, ok := r.URL.Query()["product_id"]
 	if !ok {
-		log.StdFatal(ctx, nil, nil, "No product id supplied")
+		log.StdError(ctx, nil, nil, "[HelloHandler] No product id supplied")
 		fmt.Fprint(w, "No product id supplied")
 		return
 	}
 
 	// parse the product id
 	if len(keys) < 1 {
-		log.StdFatal(ctx, nil, nil, "No product id found")
+		log.StdError(ctx, nil, nil, "[HelloHandler] No product id found")
 		fmt.Fprint(w, "No product id supplied")
 		return
 	}
 
 	productID, err = strconv.Atoi(keys[0])
 	if err != nil {
-		log.StdFatalf(ctx, nil, nil, "Product id not valid %s", keys[0])
+		log.StdError(ctx, nil, err, "[HelloHandler] Product id not valid. productID: %s", keys[0])
 		fmt.Fprint(w, "No product id supplied")
 		return
 	}
@@ -68,15 +68,12 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 
 	product, err := GetProductFromDB(ctx, productID)
 	if err != nil {
-		fmt.Fprint(w, "Invalid id")
+		log.StdFatalf(ctx, nil, err, "[HelloHandler] Product id not found in DB, productID: %s", productID)
+		fmt.Fprint(w, "Product id not found in DB, productID: %s", productID)
 		return
 	}
 
 	err = CalculateDiscount(ctx, product)
-	if err != nil {
-		fmt.Fprint(w, "Invalid id")
-		return
-	}
 
 	fmt.Fprintf(w, "%+v", product)
 }
@@ -95,7 +92,7 @@ func GetProductFromDB(ctx context.Context, id int) (*external.Product, error) {
 func CalculateDiscount(ctx context.Context, p *external.Product) error {
 	if p.Stock%2 == 0 {
 		p.Discount = 20
-		log.StdError(ctx, p, nil, "User get 20 discount")
+		log.StdInfof(ctx, p, nil, "[CalculateDiscount] User get %d discount", p.Discount)
 	} else {
 		p.Discount = 0
 	}
