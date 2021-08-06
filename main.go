@@ -99,9 +99,9 @@ func GetProductFromDB(ctx context.Context, id int) (*external.Product, error) {
 func CalculateDiscount(ctx context.Context, p *external.Product) error {
 	if p.Stock%2 == 0 {
 		p.Discount = 20
-		log.StdInfo(ctx, p, nil, "User gets 20 discount")
 	} else {
 		p.Discount = 0
 	}
+	log.StdInfof(ctx, p, nil, "User gets %s discount", p.Discount)
 	return nil
 }
