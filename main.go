@@ -42,24 +42,24 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 		err       error
 	)
 
-	keys, ok := r.URL.Query()["product_id"]
+	productIDs, ok := r.URL.Query()["product_id"]
 	if !ok {
-		log.StdWarn(ctx, nil, nil, "Keys not found")
-		fmt.Fprint(w, "Keys not found")
+		log.StdWarn(ctx, nil, nil, "ProductIDs not found")
+		fmt.Fprint(w, "ProductIDs not found")
 		return
 	}
 
 	// parse the product id
-	if len(keys) < 1 {
-		log.StdWarn(ctx, nil, nil, "Keys length is less than 1")
-		fmt.Fprint(w, "Keys length is less than 1")
+	if len(productIDs) < 1 {
+		log.StdWarn(ctx, nil, nil, "ProductIDs length is less than 1")
+		fmt.Fprint(w, "ProductIDs length is less than 1")
 		return
 	}
 
-	productID, err = strconv.Atoi(keys[0])
+	productID, err = strconv.Atoi(productIDs[0])
 	if err != nil {
-		log.StdWarnf(ctx, nil, err, "Key is not integer. Key: %s", keys[0])
-		fmt.Fprint(w, "Key is not integer")
+		log.StdWarnf(ctx, nil, err, "ProductID is not integer. Key: %s", productIDs[0])
+		fmt.Fprint(w, "ProductID is not integer")
 		return
 	}
 
